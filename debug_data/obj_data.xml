@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<obj_data>
+  <block name="Dirt" opacity="1" pass="0">
+    <texture direction="all" src="./debug_data/dirt.png" />
+  </block>
+  <block name="Stone" opacity="1" pass="0">
+    <texture direction="all" src="./debug_data/stone.png" />
+  </block>
+</obj_data>
