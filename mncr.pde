@@ -2,16 +2,13 @@
 Game game;
 
 void setup() {
-  size(640, 480, P3D);
-  
+  size(640, 480, P2D);
   game = new Game();
 }
 
 void draw() {
-  background(128, 255, 255);
-  
-  game.update();
-  game.draw();
+  background(0);
+  game.loop();
 }
 
 void keyPressed() {

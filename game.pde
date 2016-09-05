@@ -1,30 +1,54 @@
 
 class Game {
-  Cam cam;
-  Map map;
   Data data;
+  Graphics gra;
+  Player pl;
+  Map map;
   Keys keys;
   
-  boolean d;
+  boolean d; //debug
+  int fc; //frameCount
   
   Game() {
     d = true;
+    fc = 0;
+    
     data = new Data(this);
-    map = new Map(this);
-    cam = new Cam(this);
+    gra = new Graphics(this);
+    
     keys = new Keys(this);
+    
+    map = new Map(this);
+    pl = new Player(this);
     
   }
   
+  void loop() {
+    fc++;
+    this.update();
+    this.draw();
+  }
+  
   void update() {
-    cam.update();
-    cam.cam();
+    map.update();
+    pl.update();
+    this.debug("frameRate: "+frameRate);
   }
   
   void draw() {
     //lights();
-    map.draw();
-    if(d)cam.draw();
+    if(true) {
+      gra.beginDraw();
+      pl.cam();
+      map.draw();
+      gra.endDraw();
+    }
+    gra.draw();
+    pl.draw();
+  }
+  
+  void debug(String str) {
+    if(this.d)println(str);
   }
   
   void keyPressed() {
@@ -37,7 +61,6 @@ class Game {
   
   void mousePressed() {
     keys.mousePressed();
-    
   }
   
   void mouseReleased() {

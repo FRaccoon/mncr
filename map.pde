@@ -5,6 +5,7 @@ class Map {
   int ox, oy, oz;
   int sx, sy, sz;
   int s;
+  int l; //view area
   
   int[][] d = {
     { 1, 0, 0}, { 0, 1, 0}, { 0, 0, 1},
@@ -12,6 +13,7 @@ class Map {
   };
   
   Block[][][] t; //terrain
+  
   
   Map(Game g) {
     this.g = g;
@@ -25,6 +27,7 @@ class Map {
     sz = 60;
     
     s = 100;
+    l = 32;
     
     t = new Block[sx][sy][sz];
     
@@ -40,11 +43,14 @@ class Map {
     
   }
   
+  void update() {
+  }
+  
   void draw() {
-    for(int i = 0; i < sx; i++) {
-      for(int j = 0; j < sz; j++) {
-        for(int k = 0; k < sy; k++) {
-          this.drawBlock(i, k, j);
+    for(int i = -l; i < l; i++) {
+      for(int j = -l; j < l; j++) {
+        for(int k = -l; k < l; k++) {
+          this.drawBlock(gpx(g.pl.st.x)+i, gpy(g.pl.st.y)+k, gpz(g.pl.st.z)+j);
         }
       }
     }
@@ -63,15 +69,26 @@ class Map {
   
   void gen_terrain() {
     this.del_terrain();
-    for(int i = 0; i < sx; i++) {
-      for(int j = 0; j < sz; j++) {
-        int h = (int)(noise(i * 0.1, j * 0.1) * sy);
-        for(int k = 0; k < h; k++) {
-          this.set_block(i, k, j, int(random(2)));
+    if(g.d) {
+      for(int i = 0; i < sx; i++) {
+        for(int j = 0; j < sz; j++) {
+         int h = (int)(noise(i * 0.1, j * 0.1) * sy);
+          for(int k = 0; k < h; k++) {
+            this.set_block( i, k, j, int(random( g.data.num() )) );
+          }
+        }
+      }
+    }else {
+      for(int i = 0; i < sx; i++) {
+        for(int j = 0; j < sz; j++) {
+         int h = (int)(noise(i * 0.1, j * 0.1) * (sy-1));
+          for(int k = 0; k < h; k++) {
+            this.set_block( i, k, j, 3 );
+          }
+          this.set_block( i, h, j, 4 );
         }
       }
     }
-    
   }
   
   boolean is_area(int x, int y, int z) {
@@ -86,9 +103,12 @@ class Map {
   void set_block(int x, int y, int z, int id) {
     if(!this.is_area(x, y, z))return;
     t[x][y][z].id = id;
+    boolean op = this.is_opac(x, y, z);
     for(int i=0;i<6;i++) {
       this.set_surface_opac(x, y, z, i, !this.is_opac(x+d[i][0], y+d[i][1], z+d[i][2]));
-      this.set_surface_opac(x+d[i][0], y+d[i][1], z+d[i][2], 5-i, !this.is_opac(x, y, z));
+      if(op) {
+        this.set_surface_opac(x+d[i][0], y+d[i][1], z+d[i][2], 5-i, !op);
+      }
     }
   }
   
@@ -134,13 +154,14 @@ class Map {
   }
   
   void drawBlock(int x, int y, int z) {
-    pushMatrix();
+    if( !this.is_area(x, y, z) )return ;
+    g.gra.pg.pushMatrix();
     
-    scale(s);
-    translate(ox+x, oy-y, oz+z);
+    g.gra.pg.scale(s);
+    g.gra.pg.translate(ox+x, oy-y, oz+z);
     g.data.draw_block(t[x][y][z]);
     
-    popMatrix();
+    g.gra.pg.popMatrix();
   }
   
 }

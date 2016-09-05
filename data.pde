@@ -17,12 +17,19 @@ class Data {
     
     XML[] block = xml.getChildren("block");
     bd = new BlockData[block.length];
-    for(int i=0;i<block.length;i++)bd[i] = new BlockData(block[i]);
+    for(int i=0;i<block.length;i++) {
+      bd[i] = new BlockData(this);
+      bd[i].set_block(block[i]);
+    }
     
   }
   
+  int num() {
+    return bd.length;
+  }
+  
   boolean is_id(int id) {
-    return (!(id<0) && id<bd.length);
+    return (!(id<0) && id<this.num());
   }
   
   void draw_block(Block b) {
@@ -44,13 +51,14 @@ class Data {
 }
 
 class BlockData {
+  Data d;
   String name;
   Box box;
   boolean o, p; // opacity, pass
   
-  BlockData(XML xml) {
-    box = new Box();
-    this.set_block(xml);
+  BlockData(Data d) {
+    this.d = d;
+    box = new Box(this);
   }
   
   void set_block(XML xml) {
@@ -85,9 +93,11 @@ class BlockData {
 }
 
 class Box {
+  BlockData bd;
   PShape[] s; // surface
   
-  Box() {
+  Box(BlockData bd) {
+    this.bd = bd;
     s = new PShape[6];
   }
   
@@ -141,7 +151,7 @@ class Box {
   
   void draw(boolean[] d) {
     for(int i=0;i<6;i++) {
-      if(d[i])shape(this.s[i], 0, 0);
+      if(d[i])bd.d.g.gra.pg.shape(this.s[i], 0, 0);
     }
   }
   
