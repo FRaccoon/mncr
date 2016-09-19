@@ -2,9 +2,10 @@
 class Game {
   Data data;
   Graphics gra;
-  Player pl;
-  Map map;
+  Gui gui;
   Keys keys;
+  Map map;
+  Player pl;
   
   boolean d; //debug
   int fc; //frameCount
@@ -15,6 +16,7 @@ class Game {
     
     data = new Data(this);
     gra = new Graphics(this);
+    gui = new Gui(this);
     
     keys = new Keys(this);
     
@@ -37,14 +39,15 @@ class Game {
   
   void draw() {
     //lights();
-    if(true) {
-      gra.beginDraw();
-      pl.cam();
-      map.draw();
-      gra.endDraw();
-    }
-    gra.draw();
+    gra.beginDraw();
+    pl.cam();
     pl.draw();
+    map.draw();
+    gra.endDraw();
+    
+    gra.draw();
+    gui.draw_gui();
+    
   }
   
   void debug(String str) {

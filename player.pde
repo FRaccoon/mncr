@@ -11,15 +11,13 @@ class Player {
     c = new Cam(this);
     
     c.l = (height/2.0) / tan(PI*30.0 / 180.0);
-    c.t = 0.4;
-    c.p = PI;
+    c.t = 0.0;
+    c.p = 0.0;
     
     s = 50.0;
     cs = 0.07;
     
-    st.x = 0;
-    st.y = g.map.s*(g.map.oy-g.map.sy);
-    st.z = 0;
+    st.p.set(0, g.map.scl*(g.map.o.y()-g.map.s.y()), 0);
     
   }
   
@@ -41,10 +39,26 @@ class Player {
   }
   
   void draw() {
-    int r = 10;
-    noStroke();
-    fill(255, 0, 0);
-    ellipse(mouseX, mouseY, r, r);
+    Vect gd = new Vect();
+    gd.set_pc(c.t, c.p, c.l);
+    
+    Vect dx = new Vect(), dy = new Vect();
+    
+    dx.set_pc(0, c.p-HALF_PI, 1);
+    dy.set_pc(c.t+HALF_PI, c.p, 1);
+                                      
+    dx.mul(mouseX-width/2);
+    dy.mul(mouseY-height/2);
+    
+    Vect pos = st.p.copy().add(1, -st.h*.8);
+    pos.add(gd).add(dx).add(dy);
+    
+    g.gra.pg.pushMatrix();
+    g.gra.pg.translate(pos.x(), pos.y(), pos.z());
+    g.gra.pg.stroke(0);g.gra.pg.fill(0);
+    g.gra.pg.sphere(5);
+    g.gra.pg.popMatrix();
+    
   }
   
   void cam() {
@@ -57,59 +71,49 @@ class Player {
   void ml() {st.mp(c.p+HALF_PI, s);}
   
   void jump() {
-    if(st.gr)st.ay -= 80.0;
+    if(st.gr)st.a.add(1, -80.0);
   }
   
 }
 
 class Chara {
   Game g;
-  float x, y, z;
+  Vect p, v, a;
   float h; // hight
-  float vx, vy, vz;
-  float ax, ay, az;
   float gms;
   boolean gr;
   
   Chara(Game g) {
     this.g = g;
-    x = 0; y = 0; z = 0;
     h = 160;
-    vx = 0; vy = 0; vz = 0;
-    ax = 0; ay = 0; az = 0;
+    p = new Vect();
+    v = new Vect();
+    a = new Vect();
     gr = false;
     
     gms = 9.8;
   }
   
   void update() {
-    vx += ax;
-    vy += ay;
-    vz += az;
+    v.add(a);
     
-    int mx = g.map.gpx(x), my = g.map.gpy(y), mz = g.map.gpz(z);
-    g.debug("("+mx+", "+my+", "+mz+")");
-    
-    int mx_ = g.map.gpx(x+vx), my_ = g.map.gpy(y+vy), mz_ = g.map.gpz(z+vz);
+    IVec m = g.map.gp(p), m_ = g.map.gp(p.copy().add(v));
+    g.debug(p.show()+"\n"+m.show());
     
     gr=false;
-    if(g.map.is_pass(mx_, my, mz))x+=vx;
-    if(g.map.is_pass(mx, my_, mz) && my_>=0)y+=vy;
+    if(g.map.is_pass( m.copy().set(0, m_.x()) ))p.add(0, v.x());
+    if(g.map.is_pass( m.copy().set(1, m_.y()) ) && m_.y()>=0)p.add(1, v.y());
     else gr=true;
-    if(g.map.is_pass(mx, my, mz_))z+=vz;
+    if(g.map.is_pass( m.copy().set(2, m_.z()) ))p.add(2, v.z());
     
-    vx = 0;
-    vy = 0;
-    vz = 0;
+    v.set();
     
-    if(gr)ay=0;
-    else ay += gms;
+    if(gr)a.set(1, 0);
+    else a.add(1, gms);
   }
   
   void move(float mx, float my, float mz) {
-    vx += mx;
-    vy += my;
-    vz += mz;
+    v.add(new Vect(mx, my, mz));
   }
   
   void mp(float p, float s) { // move by polar coord
@@ -117,7 +121,6 @@ class Chara {
   }
   
   void draw() {
-    
   }
   
 }
@@ -134,18 +137,99 @@ class Cam {
   }
   
   void cam() {
-    float x = pl.st.x, y = pl.st.y - pl.st.h*.8, z = pl.st.z;
-    pl.g.gra.pg.camera(
-    x, y, z, 
-    x+l*cos(t)*sin(p),
-    y+l*sin(t),
-    z+l*cos(t)*cos(p),
-    0, 1, 0);
+    Vect pos = pl.st.p.copy();
+    pos.add(1, -pl.st.h*.8);
+    
+    Vect gd = new Vect(); // gaze direction
+    pl.g.debug(t+", "+p+", "+l);
+    gd.set_pc(t, p, l).add(pos);
+    
+    pl.g.gra.cam(pos, gd, this.c_up());
+    
   }
   
-  void mu(float s) {if(t>-HALF_PI+0.05)t -= s;}
-  void md(float s) {if(t<HALF_PI-0.05)t += s;}
-  void mr(float s) {p -= s;}
-  void ml(float s) {p += s;}
+  Vect c_up() {
+    return (new Vect(0, 1, 0));
+  }
+  
+  void mu(float s) {if(t>0.05-HALF_PI)t-=s;}
+  void md(float s) {if(t<HALF_PI-0.05)t+=s;}
+  void mr(float s) {p-=s;if(p<PI)p+=TWO_PI;}
+  void ml(float s) {p+=s;if(p>PI)p-=TWO_PI;}
+  
+}
+
+class Vect {
+  int n=3;
+  float[] a;
+  
+  Vect() {
+    a = new float[n];
+    for(int i=0;i<n;i++)a[i]=0;
+  }
+  
+  Vect(float[] b) {
+    a = new float[n];
+    for(int i=0;i<n;i++)a[i]=b[i];
+  }
+  
+  Vect(float x, float y, float z) {
+    a = new float[n];
+    a[0] = x;
+    a[1] = y;
+    a[2] = z;
+  }
+  
+  float x() {return a[0];}
+  float y() {return a[1];}
+  float z() {return a[2];}
+  
+  Vect copy() {
+    return (new Vect(this.a));
+  }
+  
+  Vect set(int i, float v) {a[i]=v;return this;}
+  Vect set() {for(int i=0;i<n;i++)a[i]=0;return this;}
+  Vect set(float v) {for(int i=0;i<n;i++)a[i]=v;return this;}
+  Vect set(Vect v) {for(int i=0;i<n;i++)a[i]=v.a[i];return this;}
+  Vect set(float x,float y,float z) {a[0]=x;a[1]=y;a[2]=z;return this;}
+  
+  Vect add(int i, float v) {a[i]+=v;return this;}
+  Vect add(float v) {for(int i=0;i<n;i++)a[i]+=v;return this;}
+  Vect add(Vect v) {for(int i=0;i<n;i++)a[i]+=v.a[i];return this;}
+  
+  Vect mul(int i, float v) {a[i]*=v;return this;}
+  Vect mul(float v) {for(int i=0;i<n;i++)a[i]*=v;return this;}
+  Vect mul(Vect v) {for(int i=0;i<n;i++)a[i]*=v.a[i];return this;}
+  
+  Vect set_pc(float t, float p, float l) {
+    return this.set(l*cos(t)*sin(p), l*sin(t), l*cos(t)*cos(p));
+  }
+  
+  float dot(Vect v){
+    float r=0;
+    for(int i=0;i<n;i++)r+=this.a[i]+v.a[i];
+    return r;
+  }
+  
+  Vect cross(Vect v) {
+    Vect r = new Vect();
+    r.set(0, this.a[1]*v.a[2]-this.a[2]*v.a[1]);
+    r.set(1, this.a[2]*v.a[0]-this.a[0]*v.a[2]);
+    r.set(2, this.a[0]*v.a[1]-this.a[1]*v.a[0]);
+    return r;
+  }
+  
+  float magsq() {
+    return sqrt(this.dot(this));
+  }
+  
+  Vect normalize() {
+    return this.mul(1/this.magsq());
+  }
+  
+  String show() {
+    return ("("+this.x()+", "+this.y()+", "+this.z()+")");
+  }
   
 }
